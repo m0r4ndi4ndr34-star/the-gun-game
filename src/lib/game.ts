@@ -38,7 +38,9 @@ export function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+    const t = a[i]!;
+    a[i] = a[j]!;
+    a[j] = t;
   }
   return a;
 }
@@ -114,8 +116,8 @@ export function botChoose(hand: Card[], difficulty = 1): {
     return { card: gun, bet: "win", chamber: 1 + Math.floor(Math.random() * 6) };
   }
   const sorted = [...nums].sort((x, y) => y.value - x.value);
-  const high = sorted[0];
-  const low = sorted[sorted.length - 1];
+  const high = sorted[0]!;
+  const low = sorted[sorted.length - 1]!;
   // gioca alto dichiarando vincere se è davvero alto, altrimenti basso dichiarando perdere
   if (high.value >= 5 && Math.random() < 0.8) return { card: high, bet: "win" };
   if (low.value <= 2 && Math.random() < 0.75) return { card: low, bet: "lose" };
@@ -127,5 +129,5 @@ export function botChoose(hand: Card[], difficulty = 1): {
 export function botDefend(hand: Card[]): Card {
   const nums = hand.filter((c) => c.kind === "num");
   const pool = nums.length ? nums : hand;
-  return pool[Math.floor(Math.random() * pool.length)];
+  return pool[Math.floor(Math.random() * pool.length)]!;
 }
