@@ -20,9 +20,10 @@ import {
 import { addMatch, getProfile } from "@/lib/profile";
 
 export const Route = createFileRoute("/gioca")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    avversario: typeof search["avversario"] === "string" ? (search["avversario"] as string) : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { avversario?: string } =>
+    typeof search["avversario"] === "string" && search["avversario"]
+      ? { avversario: search["avversario"] }
+      : {},
   head: () => ({
     meta: [
       { title: "Partita a due — The Gun Game" },
