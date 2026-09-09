@@ -50,7 +50,7 @@ export function EndOverlay({
           onClick={onRestart}
           className="rounded-md bg-primary px-5 py-2.5 font-bold text-primary-foreground"
         >
-          Jouer ancora
+          Gioca ancora
         </button>
         <Link
           to="/"
