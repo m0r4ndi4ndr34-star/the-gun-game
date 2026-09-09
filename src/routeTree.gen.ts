@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AmiciRouteImport } from './routes/amici'
 import { Route as ProfiloRouteImport } from './routes/profilo'
 import { Route as RegoleRouteImport } from './routes/regole'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AmiciRoute = AmiciRouteImport.update({
+  id: '/amici',
+  path: '/amici',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfiloRoute = ProfiloRouteImport.update({
@@ -31,30 +37,34 @@ const RegoleRoute = RegoleRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/amici': typeof AmiciRoute
   '/profilo': typeof ProfiloRoute
   '/regole': typeof RegoleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/amici': typeof AmiciRoute
   '/profilo': typeof ProfiloRoute
   '/regole': typeof RegoleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/amici': typeof AmiciRoute
   '/profilo': typeof ProfiloRoute
   '/regole': typeof RegoleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/profilo' | '/regole'
+  fullPaths: '/' | '/amici' | '/profilo' | '/regole'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/profilo' | '/regole'
-  id: '__root__' | '/' | '/profilo' | '/regole'
+  to: '/' | '/amici' | '/profilo' | '/regole'
+  id: '__root__' | '/' | '/amici' | '/profilo' | '/regole'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AmiciRoute: typeof AmiciRoute
   ProfiloRoute: typeof ProfiloRoute
   RegoleRoute: typeof RegoleRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/amici': {
+      id: '/amici'
+      path: '/amici'
+      fullPath: '/amici'
+      preLoaderRoute: typeof AmiciRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profilo': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AmiciRoute: AmiciRoute,
   ProfiloRoute: ProfiloRoute,
   RegoleRoute: RegoleRoute,
 }
