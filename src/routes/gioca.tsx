@@ -67,7 +67,11 @@ function Gioca() {
   const [deck, setDeck] = useState<Card[]>([]);
   const [phase, setPhase] = useState<Phase>("choose");
   const [selected, setSelected] = useState<string | null>(null);
-  const [reveal, setReveal] = useState<{ mine?: Card; theirs?: Card; text: string } | null>(null);
+  const [reveal, setReveal] = useState<{
+    mine?: Card | undefined;
+    theirs?: Card | undefined;
+    text: string;
+  } | null>(null);
   const [chamber, setChamber] = useState<number | null>(null);
   const [gunBy, setGunBy] = useState<"me" | "bot" | null>(null);
   const [shot, setShot] = useState<{ attackerIsMe: boolean } | null>(null);
