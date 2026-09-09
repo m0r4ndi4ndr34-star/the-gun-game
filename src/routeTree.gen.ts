@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AmiciRouteImport } from './routes/amici'
+import { Route as PartiteRouteImport } from './routes/partite'
 import { Route as ProfiloRouteImport } from './routes/profilo'
 import { Route as RegoleRouteImport } from './routes/regole'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const AmiciRoute = AmiciRouteImport.update({
   id: '/amici',
   path: '/amici',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PartiteRoute = PartiteRouteImport.update({
+  id: '/partite',
+  path: '/partite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfiloRoute = ProfiloRouteImport.update({
@@ -38,12 +44,14 @@ const RegoleRoute = RegoleRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/amici': typeof AmiciRoute
+  '/partite': typeof PartiteRoute
   '/profilo': typeof ProfiloRoute
   '/regole': typeof RegoleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/amici': typeof AmiciRoute
+  '/partite': typeof PartiteRoute
   '/profilo': typeof ProfiloRoute
   '/regole': typeof RegoleRoute
 }
@@ -51,20 +59,22 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/amici': typeof AmiciRoute
+  '/partite': typeof PartiteRoute
   '/profilo': typeof ProfiloRoute
   '/regole': typeof RegoleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/amici' | '/profilo' | '/regole'
+  fullPaths: '/' | '/amici' | '/partite' | '/profilo' | '/regole'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/amici' | '/profilo' | '/regole'
-  id: '__root__' | '/' | '/amici' | '/profilo' | '/regole'
+  to: '/' | '/amici' | '/partite' | '/profilo' | '/regole'
+  id: '__root__' | '/' | '/amici' | '/partite' | '/profilo' | '/regole'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AmiciRoute: typeof AmiciRoute
+  PartiteRoute: typeof PartiteRoute
   ProfiloRoute: typeof ProfiloRoute
   RegoleRoute: typeof RegoleRoute
 }
@@ -83,6 +93,13 @@ declare module '@tanstack/react-router' {
       path: '/amici'
       fullPath: '/amici'
       preLoaderRoute: typeof AmiciRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/partite': {
+      id: '/partite'
+      path: '/partite'
+      fullPath: '/partite'
+      preLoaderRoute: typeof PartiteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profilo': {
@@ -105,6 +122,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AmiciRoute: AmiciRoute,
+  PartiteRoute: PartiteRoute,
   ProfiloRoute: ProfiloRoute,
   RegoleRoute: RegoleRoute,
 }
