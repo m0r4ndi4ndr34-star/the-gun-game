@@ -10,12 +10,12 @@ export function CardView({
   onClick,
   disabled,
 }: {
-  card?: Card;
-  faceDown?: boolean;
-  lifted?: boolean;
-  className?: string;
-  onClick?: () => void;
-  disabled?: boolean;
+  card?: Card | undefined;
+  faceDown?: boolean | undefined;
+  lifted?: boolean | undefined;
+  className?: string | undefined;
+  onClick?: (() => void) | undefined;
+  disabled?: boolean | undefined;
 }) {
   const base =
     "relative aspect-[3/4] w-full overflow-hidden rounded-lg border-2 border-foreground/20 bg-black shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-200";
