@@ -1,11 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Nav } from "@/components/game/Nav";
 import { CardView } from "@/components/game/CardView";
 import { MagazineBar, MagazineWheel } from "@/components/game/Magazine";
 import { ChatPanel, type ChatMessage } from "@/components/game/ChatPanel";
 import { EndOverlay, GunShotOverlay } from "@/components/game/EndOverlay";
-import { cardBack } from "@/lib/cards";
+import { cardBack, logoImg } from "@/lib/cards";
 import {
   botChoose,
   botDefend,
@@ -44,7 +43,17 @@ export const Route = createFileRoute("/gioca")({
   component: Gioca,
 });
 
-type Phase = "choose" | "gunPick" | "defend" | "reveal" | "over";
+type Phase = "choose" | "anim" | "gunPick" | "defend" | "reveal" | "over";
+
+type Reveal = {
+  mine?: Card | undefined;
+  theirs?: Card | undefined;
+  myBet?: Bet | undefined;
+  theirBet?: Bet | undefined;
+  myDelta?: number | undefined;
+  theirDelta?: number | undefined;
+  text: string;
+};
 
 const botLines = [
   "Sei sicuro di quella carta?",
@@ -58,7 +67,37 @@ const botLines = [
 let mid = 0;
 const msgId = () => `m${++mid}`;
 
+const total = (p: PlayerState) => p.magazines * 6 + p.shots;
+
+function BetTag({ bet, delta }: { bet?: Bet | undefined; delta?: number | undefined }) {
+  if (!bet) return null;
+  const win = bet === "win";
+  return (
+    <div className="mt-2 animate-[popTag_.35s_ease-out_both] space-y-1">
+      <p
+        className={`text-[10px] font-black uppercase leading-tight tracking-wider ${
+          win ? "text-emerald-400" : "text-primary"
+        }`}
+      >
+        ha dichiarato
+        <br />
+        di {win ? "vincere" : "perdere"}
+      </p>
+      {delta !== undefined && (
+        <p
+          className={`text-lg font-black ${
+            delta > 0 ? "text-emerald-400" : delta < 0 ? "text-primary" : "text-muted-foreground"
+          }`}
+        >
+          {delta > 0 ? `+${delta}` : delta < 0 ? `${delta}` : "0"}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Gioca() {
+  const navigate = useNavigate();
   const { avversario } = Route.useSearch();
   const oppName = avversario ?? "Bot Sniper";
 
@@ -67,21 +106,17 @@ function Gioca() {
   const [deck, setDeck] = useState<Card[]>([]);
   const [phase, setPhase] = useState<Phase>("choose");
   const [selected, setSelected] = useState<string | null>(null);
-  const [reveal, setReveal] = useState<{
-    mine?: Card | undefined;
-    theirs?: Card | undefined;
-    text: string;
-  } | null>(null);
+  const [reveal, setReveal] = useState<Reveal | null>(null);
   const [chamber, setChamber] = useState<number | null>(null);
   const [gunBy, setGunBy] = useState<"me" | "bot" | null>(null);
   const [shot, setShot] = useState<{ attackerIsMe: boolean } | null>(null);
   const [over, setOver] = useState<{ result: "win" | "lose" | "draw"; byGun: boolean } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [askExit, setAskExit] = useState(false);
   const botMove = useRef<{ card: Card; bet: Bet; chamber?: number } | null>(null);
   const firstDrawer = useRef<"me" | "bot">("me");
 
-  const sys = (text: string) =>
-    setMessages((m) => [...m, { id: msgId(), from: "system", text }]);
+  const sys = (text: string) => setMessages((m) => [...m, { id: msgId(), from: "system", text }]);
 
   const startGame = useCallback(() => {
     const d = buildDeck();
@@ -105,20 +140,6 @@ function Gioca() {
   useEffect(() => {
     startGame();
   }, [startGame]);
-
-  // prepara la mossa del bot a inizio round
-  useEffect(() => {
-    if (phase !== "choose" || bot.hand.length === 0) return;
-    if (botMove.current) return;
-    const mv = botChoose(bot.hand);
-    botMove.current = mv;
-    if (mv.card.kind === "gun") {
-      setGunBy("bot");
-      setChamber(mv.chamber ?? 1);
-      setPhase("defend");
-      sys(`${oppName} gioca THE GUN! Difenditi con una carta.`);
-    }
-  }, [phase, bot.hand, oppName]);
 
   const endGame = (result: "win" | "lose" | "draw", byGun: boolean, mag: number, oppMag: number) => {
     setOver({ result, byGun });
@@ -145,25 +166,16 @@ function Gioca() {
     return { deck: deckCopy, myHand: hands.me, botHand: hands.bot };
   };
 
-  const confirmPlay = (bet: Bet) => {
-    const myCard = me.hand.find((c) => c.id === selected);
-    const mv = botMove.current;
-    if (!myCard || !mv || mv.card.kind === "gun") return;
-
-    if (myCard.kind === "gun") {
-      setGunBy("me");
-      setPhase("gunPick");
-      return;
-    }
-
-    const botCard = mv.card;
+  const resolveWithBot = (myCard: Extract<Card, { kind: "num" }>, bet: Bet) => {
+    const mv = botMove.current!;
+    const botCard = mv.card as Extract<Card, { kind: "num" }>;
     const res = resolveRound(me, bot, myCard, botCard, bet, mv.bet);
     const myHand = me.hand.filter((c) => c.id !== myCard.id);
     const botHand = bot.hand.filter((c) => c.id !== botCard.id);
     let newDeck = deck;
     let winner: "me" | "bot" | null = null;
     if (myCard.value === botCard.value) {
-      newDeck = shuffle([...deck, myCard, botCard]);
+      newDeck = shuffle(shuffle([...deck, myCard, botCard]));
     } else {
       winner = res.winner === 0 ? "me" : "bot";
     }
@@ -171,39 +183,75 @@ function Gioca() {
     setMe({ ...res.a, hand: r.myHand });
     setBot({ ...res.b, hand: r.botHand });
     setDeck(r.deck);
-    setReveal({ mine: myCard, theirs: botCard, text: res.text });
+    setReveal({
+      mine: myCard,
+      theirs: botCard,
+      myBet: bet,
+      theirBet: mv.bet,
+      myDelta: total(res.a) - total(me),
+      theirDelta: total(res.b) - total(bot),
+      text: res.text,
+    });
     sys(res.text);
     setSelected(null);
     botMove.current = null;
     setPhase("reveal");
   };
 
-  const finishGunAttack = (attackerIsMe: boolean, hit: boolean, nextState: () => void) => {
-    if (hit) {
-      setShot({ attackerIsMe });
-      setTimeout(() => {
-        setShot(null);
-        endGame(attackerIsMe ? "win" : "lose", true, me.magazines, bot.magazines);
-      }, 1800);
-    } else {
-      nextState();
-    }
+  const confirmPlay = (bet: Bet) => {
+    const myCard = me.hand.find((c) => c.id === selected);
+    if (!myCard || myCard.kind === "gun") return;
+    if (!botMove.current) botMove.current = botChoose(bot.hand);
+    const mv = botMove.current;
+
+    setReveal({ mine: myCard, myBet: bet, text: `${oppName} sta pensando…` });
+    setPhase("anim");
+
+    window.setTimeout(() => {
+      if (mv.card.kind === "gun") {
+        // l'avversario risponde con THE GUN: la mia carta torna in mano
+        setGunBy("bot");
+        setChamber(mv.chamber ?? 1);
+        setReveal({ theirs: mv.card, text: `${oppName} gioca THE GUN! Difenditi con una carta.` });
+        sys(`${oppName} gioca THE GUN! Difenditi con una carta.`);
+        setSelected(null);
+        setPhase("defend");
+        return;
+      }
+      resolveWithBot(myCard, bet);
+    }, 1000);
   };
 
-  // io gioco THE GUN: scelgo la camera
+  // avanzamento automatico dopo la rivelazione
+  useEffect(() => {
+    if (phase !== "reveal") return;
+    const t = window.setTimeout(() => nextRound(), 2800);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, reveal]);
+
+  const finishGunAttack = (attackerIsMe: boolean, hit: boolean) => {
+    if (!hit) return;
+    setShot({ attackerIsMe });
+    window.setTimeout(() => {
+      setShot(null);
+      endGame(attackerIsMe ? "win" : "lose", true, me.magazines, bot.magazines);
+    }, 1800);
+  };
+
   const pickChamber = (n: number) => {
-    const gunCard = me.hand.find((c) => c.id === selected);
-    if (!gunCard) return;
+    const gunCardInHand = me.hand.find((c) => c.id === selected);
+    if (!gunCardInHand) return;
     const defense = botDefend(bot.hand);
     const hit = defense.kind === "num" && defense.value === n;
-    const myHand = me.hand.filter((c) => c.id !== gunCard.id);
+    const myHand = me.hand.filter((c) => c.id !== gunCardInHand.id);
     const botHand = bot.hand.filter((c) => c.id !== defense.id);
     const r = refill(deck, myHand, botHand, "me");
     setMe((p) => ({ ...p, hand: r.myHand }));
     setBot((p) => ({ ...p, hand: r.botHand }));
     setDeck(r.deck);
     setReveal({
-      mine: gunCard,
+      mine: gunCardInHand,
       theirs: defense,
       text: hit
         ? `Camera ${n}: colpo a segno! ${oppName} è eliminato.`
@@ -214,11 +262,10 @@ function Gioca() {
     setGunBy(null);
     setChamber(null);
     botMove.current = null;
-    finishGunAttack(true, hit, () => setPhase("reveal"));
-    if (hit) setPhase("reveal");
+    setPhase("reveal");
+    finishGunAttack(true, hit);
   };
 
-  // il bot gioca THE GUN: scelgo la carta difensiva
   const defendWith = (card: Card) => {
     const mv = botMove.current;
     const secret = mv?.chamber ?? chamber ?? 1;
@@ -241,17 +288,13 @@ function Gioca() {
     setGunBy(null);
     setChamber(null);
     botMove.current = null;
-    finishGunAttack(false, hit, () => setPhase("reveal"));
-    if (hit) setPhase("reveal");
+    setPhase("reveal");
+    finishGunAttack(false, hit);
   };
 
   const nextRound = () => {
+    if (over || shot) return;
     setReveal(null);
-    if (deck.length === 0 && (me.hand.length === 0 || bot.hand.length === 0)) {
-      const out = finalOutcome(me, bot);
-      endGame(out === "a" ? "win" : out === "b" ? "lose" : "draw", false, me.magazines, bot.magazines);
-      return;
-    }
     if (deck.length === 0) {
       const out = finalOutcome(me, bot);
       endGame(out === "a" ? "win" : out === "b" ? "lose" : "draw", false, me.magazines, bot.magazines);
@@ -260,9 +303,20 @@ function Gioca() {
     setPhase("choose");
   };
 
+  const abandon = () => {
+    addMatch({
+      opponent: oppName,
+      result: "lose",
+      byGun: false,
+      magazines: me.magazines,
+      oppMagazines: bot.magazines,
+    });
+    navigate({ to: "/" });
+  };
+
   const sendMessage = (text: string) => {
     setMessages((m) => [...m, { id: msgId(), from: "me", text }]);
-    setTimeout(
+    window.setTimeout(
       () =>
         setMessages((m) => [
           ...m,
@@ -276,20 +330,27 @@ function Gioca() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Nav />
+      <header className="flex items-center justify-between border-b border-foreground/10 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <img src={logoImg} alt="The Gun Game" className="h-8 w-8 object-contain" />
+          <span className="text-xs font-black tracking-widest text-foreground">PARTITA IN CORSO</span>
+        </div>
+        <button
+          onClick={() => setAskExit(true)}
+          className="rounded-md border-2 border-foreground/25 px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition-all hover:scale-105 hover:border-primary hover:text-primary"
+        >
+          Abbandona
+        </button>
+      </header>
+
       <main className="mx-auto grid max-w-6xl gap-4 px-4 py-4 lg:grid-cols-[1fr_20rem]">
         <div className="space-y-4">
           {/* Avversario */}
           <div className="flex items-start gap-4 rounded-lg border border-foreground/10 bg-card/60 p-3">
-            <MagazineBar
-              shots={bot.shots}
-              magazines={bot.magazines}
-              label={bot.name}
-              compact
-            />
+            <MagazineBar shots={bot.shots} magazines={bot.magazines} label={bot.name} compact />
             <div className="flex flex-1 justify-center gap-2">
               {bot.hand.map((c) => (
-                <div key={c.id} className="w-16 sm:w-20">
+                <div key={c.id} className="w-16 transition-all duration-300 sm:w-20">
                   <CardView card={c} faceDown />
                 </div>
               ))}
@@ -297,7 +358,7 @@ function Gioca() {
           </div>
 
           {/* Tavolo */}
-          <div className="relative flex min-h-52 items-center justify-center gap-8 rounded-lg border border-foreground/10 bg-[radial-gradient(circle,rgba(220,38,38,0.12),transparent_70%)] p-4">
+          <div className="relative flex min-h-56 items-center justify-center gap-8 rounded-lg border border-foreground/10 bg-[radial-gradient(circle,rgba(220,38,38,0.12),transparent_70%)] p-4">
             <div className="text-center">
               <div className="w-20">
                 <img
@@ -310,41 +371,35 @@ function Gioca() {
             </div>
 
             {reveal ? (
-              <div className="flex items-center gap-6">
-                <div className="w-20 text-center">
-                  <CardView card={reveal.mine} />
+              <div className="flex items-start gap-8">
+                <div className="w-20 animate-[playFromBottom_.45s_ease-out_both] text-center">
+                  {reveal.mine ? <CardView card={reveal.mine} /> : null}
                   <p className="mt-1 text-[10px] uppercase text-muted-foreground">Tu</p>
+                  <BetTag bet={reveal.myBet} delta={reveal.myDelta} />
                 </div>
-                <div className="w-20 text-center">
-                  <CardView card={reveal.theirs} />
+                <div className="w-20 animate-[playFromTop_.45s_ease-out_both] text-center">
+                  {reveal.theirs ? <CardView card={reveal.theirs} /> : <CardView faceDown />}
                   <p className="mt-1 text-[10px] uppercase text-muted-foreground">{bot.name}</p>
+                  <BetTag bet={reveal.theirBet} delta={reveal.theirDelta} />
                 </div>
               </div>
             ) : (
               <p className="max-w-xs text-center text-sm text-muted-foreground">
-                {phase === "defend"
-                  ? `${bot.name} ha giocato THE GUN: scegli una carta per difenderti.`
-                  : "Scegli una carta e dichiara se vuoi Vincere o Perdere."}
+                Scegli una carta e dichiara se vuoi Vincere o Perdere.
               </p>
             )}
           </div>
 
-          {reveal && phase === "reveal" && (
-            <div className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-center text-sm">
-              <p>{reveal.text}</p>
-              <button
-                onClick={nextRound}
-                className="mt-2 rounded-md bg-primary px-4 py-2 text-sm font-bold uppercase tracking-widest text-primary-foreground"
-              >
-                Continua
-              </button>
-            </div>
+          {reveal?.text && (
+            <p className="animate-[popTag_.3s_ease-out_both] rounded-lg border border-primary/30 bg-primary/10 p-3 text-center text-sm">
+              {reveal.text}
+            </p>
           )}
 
           {/* La mia zona */}
           <div className="flex items-end gap-4 rounded-lg border border-foreground/10 bg-card/60 p-3">
             <MagazineBar shots={me.shots} magazines={me.magazines} label={me.name} />
-            <div className="flex flex-1 items-end justify-center gap-3 pt-6">
+            <div className="flex flex-1 items-end justify-center gap-3 pt-8">
               {me.hand.map((c) => (
                 <div key={c.id} className="w-20 sm:w-24">
                   <CardView
@@ -361,12 +416,18 @@ function Gioca() {
             </div>
           </div>
 
+          {phase === "defend" && (
+            <p className="text-center text-sm font-bold uppercase tracking-widest text-primary">
+              Scegli una carta per difenderti da THE GUN
+            </p>
+          )}
+
           {phase === "choose" && selCard && (
-            <div className="flex justify-center gap-3">
+            <div className="flex animate-[popTag_.3s_ease-out_both] justify-center gap-3">
               {selCard.kind === "gun" ? (
                 <button
                   onClick={() => setPhase("gunPick")}
-                  className="rounded-md bg-primary px-6 py-3 font-black uppercase tracking-widest text-primary-foreground"
+                  className="rounded-md bg-primary px-6 py-3 font-black uppercase tracking-widest text-primary-foreground transition-transform hover:scale-105"
                 >
                   Gioca THE GUN
                 </button>
@@ -374,13 +435,13 @@ function Gioca() {
                 <>
                   <button
                     onClick={() => confirmPlay("win")}
-                    className="rounded-md bg-primary px-6 py-3 font-black uppercase tracking-widest text-primary-foreground"
+                    className="rounded-md bg-emerald-600 px-6 py-3 font-black uppercase tracking-widest text-white transition-transform hover:scale-105"
                   >
                     Dichiaro: Vincere
                   </button>
                   <button
                     onClick={() => confirmPlay("lose")}
-                    className="rounded-md border-2 border-foreground/30 px-6 py-3 font-black uppercase tracking-widest text-foreground"
+                    className="rounded-md bg-primary px-6 py-3 font-black uppercase tracking-widest text-primary-foreground transition-transform hover:scale-105"
                   >
                     Dichiaro: Perdere
                   </button>
@@ -395,22 +456,45 @@ function Gioca() {
         </div>
       </main>
 
-      {phase === "gunPick" && gunBy === "me" && (
-        <div className="fixed inset-0 z-30 flex flex-col items-center justify-center gap-6 bg-black/85 px-4">
+      {phase === "gunPick" && !gunBy && (
+        <div className="fixed inset-0 z-30 flex animate-[popTag_.3s_ease-out_both] flex-col items-center justify-center gap-6 bg-black/85 px-4">
           <p className="text-center text-lg font-black uppercase tracking-widest text-primary">
             Scegli la camera con il proiettile
           </p>
           <MagazineWheel onPick={pickChamber} />
-          <p className="text-xs text-muted-foreground">
-            1 in alto, poi in senso orario fino al 6.
-          </p>
+          <p className="text-xs text-muted-foreground">1 in alto, poi in senso orario fino al 6.</p>
+        </div>
+      )}
+
+      {askExit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 px-6">
+          <div className="w-full max-w-sm animate-[popTag_.25s_ease-out_both] rounded-xl border-2 border-primary/40 bg-card p-6 text-center">
+            <p className="text-lg font-black uppercase tracking-widest">
+              Vuoi davvero uscire dalla partita?
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              La partita verrà registrata come persa.
+            </p>
+            <div className="mt-5 flex justify-center gap-3">
+              <button
+                onClick={abandon}
+                className="rounded-md bg-primary px-6 py-2.5 font-black uppercase tracking-widest text-primary-foreground"
+              >
+                Sì
+              </button>
+              <button
+                onClick={() => setAskExit(false)}
+                className="rounded-md border-2 border-foreground/25 px-6 py-2.5 font-black uppercase tracking-widest"
+              >
+                No
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       {shot && <GunShotOverlay attackerIsMe={shot.attackerIsMe} />}
-      {over && !shot && (
-        <EndOverlay result={over.result} byGun={over.byGun} onRestart={startGame} />
-      )}
+      {over && !shot && <EndOverlay result={over.result} byGun={over.byGun} onRestart={startGame} />}
     </div>
   );
 }
