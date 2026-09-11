@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AmiciRouteImport } from './routes/amici'
 import { Route as GiocaRouteImport } from './routes/gioca'
+import { Route as Gun3dTestRouteImport } from './routes/gun3d-test'
 import { Route as PartiteRouteImport } from './routes/partite'
 import { Route as ProfiloRouteImport } from './routes/profilo'
 import { Route as RegoleRouteImport } from './routes/regole'
@@ -29,6 +30,11 @@ const AmiciRoute = AmiciRouteImport.update({
 const GiocaRoute = GiocaRouteImport.update({
   id: '/gioca',
   path: '/gioca',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Gun3dTestRoute = Gun3dTestRouteImport.update({
+  id: '/gun3d-test',
+  path: '/gun3d-test',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PartiteRoute = PartiteRouteImport.update({
@@ -51,6 +57,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/amici': typeof AmiciRoute
   '/gioca': typeof GiocaRoute
+  '/gun3d-test': typeof Gun3dTestRoute
   '/partite': typeof PartiteRoute
   '/profilo': typeof ProfiloRoute
   '/regole': typeof RegoleRoute
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/amici': typeof AmiciRoute
   '/gioca': typeof GiocaRoute
+  '/gun3d-test': typeof Gun3dTestRoute
   '/partite': typeof PartiteRoute
   '/profilo': typeof ProfiloRoute
   '/regole': typeof RegoleRoute
@@ -68,23 +76,46 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/amici': typeof AmiciRoute
   '/gioca': typeof GiocaRoute
+  '/gun3d-test': typeof Gun3dTestRoute
   '/partite': typeof PartiteRoute
   '/profilo': typeof ProfiloRoute
   '/regole': typeof RegoleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/amici' | '/gioca' | '/partite' | '/profilo' | '/regole'
+  fullPaths:
+    | '/'
+    | '/amici'
+    | '/gioca'
+    | '/gun3d-test'
+    | '/partite'
+    | '/profilo'
+    | '/regole'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/amici' | '/gioca' | '/partite' | '/profilo' | '/regole'
+  to:
+    | '/'
+    | '/amici'
+    | '/gioca'
+    | '/gun3d-test'
+    | '/partite'
+    | '/profilo'
+    | '/regole'
   id:
-    '__root__' | '/' | '/amici' | '/gioca' | '/partite' | '/profilo' | '/regole'
+    | '__root__'
+    | '/'
+    | '/amici'
+    | '/gioca'
+    | '/gun3d-test'
+    | '/partite'
+    | '/profilo'
+    | '/regole'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AmiciRoute: typeof AmiciRoute
   GiocaRoute: typeof GiocaRoute
+  Gun3dTestRoute: typeof Gun3dTestRoute
   PartiteRoute: typeof PartiteRoute
   ProfiloRoute: typeof ProfiloRoute
   RegoleRoute: typeof RegoleRoute
@@ -111,6 +142,13 @@ declare module '@tanstack/react-router' {
       path: '/gioca'
       fullPath: '/gioca'
       preLoaderRoute: typeof GiocaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gun3d-test': {
+      id: '/gun3d-test'
+      path: '/gun3d-test'
+      fullPath: '/gun3d-test'
+      preLoaderRoute: typeof Gun3dTestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/partite': {
@@ -141,6 +179,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AmiciRoute: AmiciRoute,
   GiocaRoute: GiocaRoute,
+  Gun3dTestRoute: Gun3dTestRoute,
   PartiteRoute: PartiteRoute,
   ProfiloRoute: ProfiloRoute,
   RegoleRoute: RegoleRoute,
