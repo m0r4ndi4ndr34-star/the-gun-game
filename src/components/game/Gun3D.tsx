@@ -227,7 +227,7 @@ function LoadScene({
   return (
     <>
       <group ref={magRef} position={[0, 0, -0.6]}>
-        <MagazineBlock loaded={picked} bulletY={bulletY} />
+        <MagazineBlock loaded={picked} bulletY={bulletY} onPick={confirmed ? undefined : onPick} />
       </group>
       <group ref={gunRef} position={[0, -0.4, 2.6]} scale={0.9} visible={confirmed}>
         <Pistol />
