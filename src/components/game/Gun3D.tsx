@@ -97,7 +97,7 @@ function MagazineBlock({
 }: {
   loaded: number | null;
   hover?: number | null;
-  onPick?: (n: number) => void;
+  onPick: (n: number) => void;
   bulletY: number;
 }) {
   return (
@@ -123,9 +123,9 @@ function MagazineBlock({
             {/* foro camera */}
             <mesh
               position={[0, 0.2, 0]}
-              onClick={() => onPick?.(n)}
+              onClick={() => onPick(n)}
               onPointerOver={() => {
-                if (onPick) document.body.style.cursor = "pointer";
+                document.body.style.cursor = "pointer";
               }}
               onPointerOut={() => {
                 document.body.style.cursor = "";
@@ -227,7 +227,7 @@ function LoadScene({
   return (
     <>
       <group ref={magRef} position={[0, 0, -0.6]}>
-        <MagazineBlock loaded={picked} bulletY={bulletY} onPick={confirmed ? undefined : onPick} />
+        <MagazineBlock loaded={picked} bulletY={bulletY} onPick={(n) => (confirmed ? undefined : onPick(n))} />
       </group>
       <group ref={gunRef} position={[0, -0.4, 2.6]} scale={0.9} visible={confirmed}>
         <Pistol />
@@ -260,6 +260,7 @@ export function GunLoader3D({ onConfirm }: { onConfirm: (n: number) => void }) {
           <LoadScene
             picked={picked}
             confirmed={confirmed}
+            onPick={setPicked}
             onReady={() => {
               if (fired.current || picked === null) return;
               fired.current = true;
