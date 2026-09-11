@@ -1,9 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CardView } from "@/components/game/CardView";
-import { MagazineBar, MagazineWheel } from "@/components/game/Magazine";
+import { MagazineBar } from "@/components/game/Magazine";
 import { ChatPanel, type ChatMessage } from "@/components/game/ChatPanel";
-import { EndOverlay, GunShotOverlay } from "@/components/game/EndOverlay";
+import { EndOverlay } from "@/components/game/EndOverlay";
+import { GunFire3D, GunLoader3D } from "@/components/game/Gun3D";
 import { cardBack, logoImg } from "@/lib/cards";
 import {
   botChoose,
@@ -109,7 +110,9 @@ function Gioca() {
   const [reveal, setReveal] = useState<Reveal | null>(null);
   const [chamber, setChamber] = useState<number | null>(null);
   const [gunBy, setGunBy] = useState<"me" | "bot" | null>(null);
-  const [shot, setShot] = useState<{ attackerIsMe: boolean } | null>(null);
+  const [shot, setShot] = useState<{ attackerIsMe: boolean; hit: boolean; chamber: number } | null>(
+    null,
+  );
   const [over, setOver] = useState<{ result: "win" | "lose" | "draw"; byGun: boolean } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [askExit, setAskExit] = useState(false);
@@ -230,13 +233,14 @@ function Gioca() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, reveal]);
 
-  const finishGunAttack = (attackerIsMe: boolean, hit: boolean) => {
-    if (!hit) return;
-    setShot({ attackerIsMe });
-    window.setTimeout(() => {
-      setShot(null);
-      endGame(attackerIsMe ? "win" : "lose", true, me.magazines, bot.magazines);
-    }, 1800);
+  const finishGunAttack = (attackerIsMe: boolean, hit: boolean, chamberNum: number) => {
+    setShot({ attackerIsMe, hit, chamber: chamberNum });
+  };
+
+  const endShotScene = () => {
+    const s = shot;
+    setShot(null);
+    if (s?.hit) endGame(s.attackerIsMe ? "win" : "lose", true, me.magazines, bot.magazines);
   };
 
   const pickChamber = (n: number) => {
@@ -263,7 +267,7 @@ function Gioca() {
     setChamber(null);
     botMove.current = null;
     setPhase("reveal");
-    finishGunAttack(true, hit);
+    finishGunAttack(true, hit, n);
   };
 
   const defendWith = (card: Card) => {
@@ -289,7 +293,7 @@ function Gioca() {
     setChamber(null);
     botMove.current = null;
     setPhase("reveal");
-    finishGunAttack(false, hit);
+    finishGunAttack(false, hit, secret);
   };
 
   const nextRound = () => {
@@ -456,15 +460,7 @@ function Gioca() {
         </div>
       </main>
 
-      {phase === "gunPick" && !gunBy && (
-        <div className="fixed inset-0 z-30 flex animate-[popTag_.3s_ease-out_both] flex-col items-center justify-center gap-6 bg-black/85 px-4">
-          <p className="text-center text-lg font-black uppercase tracking-widest text-primary">
-            Scegli la camera con il proiettile
-          </p>
-          <MagazineWheel onPick={pickChamber} />
-          <p className="text-xs text-muted-foreground">1 in alto, poi in senso orario fino al 6.</p>
-        </div>
-      )}
+      {phase === "gunPick" && !gunBy && <GunLoader3D onConfirm={pickChamber} />}
 
       {askExit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 px-6">
@@ -493,7 +489,14 @@ function Gioca() {
         </div>
       )}
 
-      {shot && <GunShotOverlay attackerIsMe={shot.attackerIsMe} />}
+      {shot && (
+        <GunFire3D
+          attackerIsMe={shot.attackerIsMe}
+          hit={shot.hit}
+          chamber={shot.chamber}
+          onDone={endShotScene}
+        />
+      )}
       {over && !shot && <EndOverlay result={over.result} byGun={over.byGun} onRestart={startGame} />}
     </div>
   );
