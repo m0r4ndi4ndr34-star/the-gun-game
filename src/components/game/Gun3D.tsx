@@ -168,12 +168,15 @@ function MagazineBlock({
 function LoadScene({
   picked,
   confirmed,
+  onPick,
   onReady,
 }: {
   picked: number | null;
   confirmed: boolean;
+  onPick: (n: number) => void;
   onReady: () => void;
 }) {
+
   const magRef = useRef<THREE.Group>(null);
   const gunRef = useRef<THREE.Group>(null);
   const t0 = useRef<number | null>(null);
