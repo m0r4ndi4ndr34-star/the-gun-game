@@ -123,10 +123,15 @@ function MagazineBlock({
             {/* foro camera */}
             <mesh
               position={[0, 0.2, 0]}
-              onClick={onPick ? () => onPick(n) : undefined}
-              onPointerOver={onPick ? () => document.body.style.setProperty("cursor", "pointer") : undefined}
-              onPointerOut={onPick ? () => document.body.style.removeProperty("cursor") : undefined}
+              onClick={() => onPick?.(n)}
+              onPointerOver={() => {
+                if (onPick) document.body.style.cursor = "pointer";
+              }}
+              onPointerOut={() => {
+                document.body.style.cursor = "";
+              }}
             >
+
               <cylinderGeometry args={[0.32, 0.32, 0.42, 28]} />
               <meshStandardMaterial
                 color={active ? "#5a1414" : hover === n ? "#4a4f57" : "#101113"}
