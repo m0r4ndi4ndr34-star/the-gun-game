@@ -277,6 +277,11 @@ function Gioca() {
   };
 
   const defendWith = (card: Card) => {
+    // ci si difende solo con una carta numerata: THE GUN resta in mano
+    if (card.kind !== "num") {
+      sys("Per difenderti devi giocare una carta numerata: THE GUN resta in mano.");
+      return;
+    }
     const mv = botMove.current;
     const secret = mv?.chamber ?? chamber ?? 1;
     const hit = card.kind === "num" && card.value === secret;
