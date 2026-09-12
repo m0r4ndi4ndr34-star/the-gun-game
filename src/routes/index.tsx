@@ -23,8 +23,8 @@ export const Route = createFileRoute("/")({
 });
 
 const voci = [
-  { to: "/gioca", label: "Gioca", desc: "Inizia una nuova partita" },
-  { to: "/amici", label: "Amici", desc: "Sfida chi conosci o il bot" },
+  { to: "/gioca", label: "Gioca con un bot", desc: "Partita subito contro il computer" },
+  { to: "/amici", label: "Gioca con un amico online", desc: "Cerca un giocatore per nickname" },
   { to: "/partite", label: "Partite", desc: "Storico dei risultati" },
   { to: "/regole", label: "Regole", desc: "Il regolamento completo" },
   { to: "/profilo", label: "Profilo", desc: "Nome e foto" },

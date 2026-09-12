@@ -24,7 +24,7 @@ let seq = 0;
 const nid = () => `c${++seq}`;
 
 export function buildDeck(): Card[] {
-  const counts = [9, 9, 8, 8, 8, 8]; // valori 1..6 => 50 carte
+  const counts = [5, 9, 11, 11, 9, 5]; // valori 1..6 => 50 carte
   const deck: Card[] = [];
   counts.forEach((n, i) => {
     for (let k = 0; k < n; k++) deck.push({ id: nid(), kind: "num", value: i + 1 });
