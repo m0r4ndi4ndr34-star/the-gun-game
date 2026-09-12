@@ -302,8 +302,8 @@ function Gioca() {
     finishGunAttack(false, hit, secret);
   };
 
-  const nextRound = () => {
-    if (over || shot) return;
+  const nextRound = (force = false) => {
+    if (over || (!force && shot)) return;
     setReveal(null);
     // il mazzo può finire: si continua finché qualcuno ha ancora carte in mano
     if (deck.length === 0 && (me.hand.length === 0 || bot.hand.length === 0)) {
