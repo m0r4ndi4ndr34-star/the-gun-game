@@ -178,7 +178,8 @@ function Gioca() {
     let newDeck = deck;
     let winner: "me" | "bot" | null = null;
     if (myCard.value === botCard.value) {
-      newDeck = shuffle(shuffle([...deck, myCard, botCard]));
+      // carte uguali: rimosse definitivamente dalla partita
+      newDeck = shuffle(deck);
     } else {
       winner = res.winner === 0 ? "me" : "bot";
     }

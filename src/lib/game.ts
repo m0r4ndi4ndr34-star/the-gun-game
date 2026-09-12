@@ -69,7 +69,12 @@ export function resolveRound(
   bBet: Bet,
 ): { a: PlayerState; b: PlayerState; winner: Side | null; text: string } {
   if (aCard.value === bCard.value) {
-    return { a, b, winner: null, text: "Pareggio! Round annullato, le carte tornano nel mazzo." };
+    return {
+      a,
+      b,
+      winner: null,
+      text: "Pareggio! Round annullato: le due carte sono rimosse definitivamente dalla partita.",
+    };
   }
   const aWon = aCard.value > bCard.value;
   const diff = Math.abs(aCard.value - bCard.value);
