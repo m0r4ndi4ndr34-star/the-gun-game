@@ -300,7 +300,8 @@ function Gioca() {
   const nextRound = () => {
     if (over || shot) return;
     setReveal(null);
-    if (deck.length === 0) {
+    // il mazzo può finire: si continua finché qualcuno ha ancora carte in mano
+    if (deck.length === 0 && (me.hand.length === 0 || bot.hand.length === 0)) {
       const out = finalOutcome(me, bot);
       endGame(out === "a" ? "win" : out === "b" ? "lose" : "draw", false, me.magazines, bot.magazines);
       return;
@@ -461,7 +462,10 @@ function Gioca() {
         </div>
       </main>
 
-      {phase === "gunPick" && !gunBy && <GunLoader3D onConfirm={pickChamber} />}
+      {/* la scena 3D viene precaricata appena selezioni la carta THE GUN */}
+      {!gunBy && (phase === "gunPick" || (phase === "choose" && selCard?.kind === "gun")) && (
+        <GunLoader3D onConfirm={pickChamber} active={phase === "gunPick"} />
+      )}
 
       {askExit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 px-6">
