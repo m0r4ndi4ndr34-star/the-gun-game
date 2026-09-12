@@ -241,7 +241,12 @@ function Gioca() {
   const endShotScene = () => {
     const s = shot;
     setShot(null);
-    if (s?.hit) endGame(s.attackerIsMe ? "win" : "lose", true, me.magazines, bot.magazines);
+    if (s?.hit) {
+      endGame(s.attackerIsMe ? "win" : "lose", true, me.magazines, bot.magazines);
+      return;
+    }
+    // colpo a vuoto: la partita riprende normalmente
+    nextRound(true);
   };
 
   const pickChamber = (n: number) => {
