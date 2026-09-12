@@ -237,18 +237,38 @@ function LoadScene({
 }
 
 /** Overlay 3D: scegli la camera, inserisci il colpo, il caricatore entra nella pistola */
-export function GunLoader3D({ onConfirm }: { onConfirm: (n: number) => void }) {
+export function GunLoader3D({
+  onConfirm,
+  active = true,
+}: {
+  onConfirm: (n: number) => void;
+  active?: boolean;
+}) {
   const [picked, setPicked] = useState<number | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const [ready, setReady] = useState(false);
   const fired = useRef(false);
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-black/92">
+    <div
+      className={`fixed inset-0 z-40 flex flex-col items-center justify-center bg-black/92 transition-opacity duration-200 ${
+        active && ready ? "opacity-100" : "pointer-events-none opacity-0"
+      }`}
+      aria-hidden={!active}
+    >
       <p className="pt-6 text-center text-lg font-black uppercase tracking-widest text-primary">
         {confirmed ? "Pistola pronta" : "Scegli la camera con il proiettile"}
       </p>
       <div className="relative h-[60vh] w-full max-w-3xl">
-        <Canvas shadows camera={{ position: [0, 8.5, 0.6], fov: 42 }} dpr={[1, 2]}>
+        <Canvas
+          shadows
+          camera={{ position: [0, 8.5, 0.6], fov: 42 }}
+          dpr={[1, 2]}
+          onCreated={({ gl, scene, camera }) => {
+            gl.compile(scene, camera);
+            requestAnimationFrame(() => setReady(true));
+          }}
+        >
           <color attach="background" args={["#0a0a0b"]} />
           <ambientLight intensity={0.5} />
           <spotLight position={[3, 9, 2]} angle={0.7} penumbra={0.6} intensity={90} castShadow />

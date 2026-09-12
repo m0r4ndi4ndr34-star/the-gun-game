@@ -51,7 +51,10 @@ function Regole() {
         </Section>
 
         <Section title="2. Componenti e preparazione">
-          <p>Il mazzo è di 52 carte: 50 carte numerate da 1 a 6 e 2 carte speciali The Gun.</p>
+          <p>
+            Il mazzo è di 52 carte: 50 carte numerate e 2 carte speciali The Gun. La composizione
+            esatta è 5 carte «1», 9 carte «2», 11 carte «3», 11 carte «4», 9 carte «5», 5 carte «6».
+          </p>
           <p>
             Mano iniziale: ogni giocatore riceve 3 carte private (coperte agli occhi
             dell'avversario). Il resto forma il mazzo di pesca al centro del tavolo.
@@ -94,8 +97,9 @@ function Regole() {
         <Section title="4. Pareggio delle carte numerate">
           <p>
             Se escono due carte dello stesso valore il round è annullato: nessuno guadagna né perde
-            colpi. Le due carte tornano nel mazzo, che viene subito mescolato. L'ordine di pesca non
-            cambia: pesca per primo chi aveva pescato per primo nell'ultimo round valido.
+            colpi. Le due carte vengono <b>rimosse definitivamente dalla partita</b> e non tornano
+            nel mazzo. L'ordine di pesca non cambia: pesca per primo chi aveva pescato per primo
+            nell'ultimo round valido.
           </p>
         </Section>
 
@@ -122,9 +126,11 @@ function Regole() {
 
         <Section title="7. Fine della partita e vittoria">
           <p>
-            La partita finisce per eliminazione istantanea (colpo di The Gun andato a segno) o per
-            esaurimento del mazzo. In quest'ultimo caso vince chi ha completato più caricatori; a
-            parità, chi ha più colpi nel caricatore in corso; se tutto è identico è parità assoluta.
+            La partita finisce per eliminazione istantanea (colpo di The Gun andato a segno) oppure
+            quando il mazzo è esaurito: in quel caso <b>si continua a giocare</b> finché i giocatori
+            esauriscono le carte che hanno in mano, e solo allora si calcola il punteggio finale.
+            Vince chi ha completato più caricatori; a parità, chi ha più colpi nel caricatore in
+            corso; se tutto è identico è parità assoluta.
           </p>
         </Section>
       </main>
