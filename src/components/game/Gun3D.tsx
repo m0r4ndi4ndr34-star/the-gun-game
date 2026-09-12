@@ -237,13 +237,25 @@ function LoadScene({
 }
 
 /** Overlay 3D: scegli la camera, inserisci il colpo, il caricatore entra nella pistola */
-export function GunLoader3D({ onConfirm }: { onConfirm: (n: number) => void }) {
+export function GunLoader3D({
+  onConfirm,
+  active = true,
+}: {
+  onConfirm: (n: number) => void;
+  active?: boolean;
+}) {
   const [picked, setPicked] = useState<number | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const [ready, setReady] = useState(false);
   const fired = useRef(false);
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col items-center justify-center bg-black/92">
+    <div
+      className={`fixed inset-0 z-40 flex flex-col items-center justify-center bg-black/92 transition-opacity duration-200 ${
+        active && ready ? "opacity-100" : "pointer-events-none opacity-0"
+      }`}
+      aria-hidden={!active}
+    >
       <p className="pt-6 text-center text-lg font-black uppercase tracking-widest text-primary">
         {confirmed ? "Pistola pronta" : "Scegli la camera con il proiettile"}
       </p>
