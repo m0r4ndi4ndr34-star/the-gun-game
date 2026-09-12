@@ -51,7 +51,10 @@ function Regole() {
         </Section>
 
         <Section title="2. Componenti e preparazione">
-          <p>Il mazzo è di 52 carte: 50 carte numerate da 1 a 6 e 2 carte speciali The Gun.</p>
+          <p>
+            Il mazzo è di 52 carte: 50 carte numerate e 2 carte speciali The Gun. La composizione
+            esatta è 5 carte «1», 9 carte «2», 11 carte «3», 11 carte «4», 9 carte «5», 5 carte «6».
+          </p>
           <p>
             Mano iniziale: ogni giocatore riceve 3 carte private (coperte agli occhi
             dell'avversario). Il resto forma il mazzo di pesca al centro del tavolo.
