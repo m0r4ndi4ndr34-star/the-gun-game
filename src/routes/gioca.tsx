@@ -241,7 +241,12 @@ function Gioca() {
   const endShotScene = () => {
     const s = shot;
     setShot(null);
-    if (s?.hit) endGame(s.attackerIsMe ? "win" : "lose", true, me.magazines, bot.magazines);
+    if (s?.hit) {
+      endGame(s.attackerIsMe ? "win" : "lose", true, me.magazines, bot.magazines);
+      return;
+    }
+    // colpo a vuoto: la partita riprende normalmente
+    nextRound(true);
   };
 
   const pickChamber = (n: number) => {
@@ -272,6 +277,11 @@ function Gioca() {
   };
 
   const defendWith = (card: Card) => {
+    // ci si difende solo con una carta numerata: THE GUN resta in mano
+    if (card.kind !== "num") {
+      sys("Per difenderti devi giocare una carta numerata: THE GUN resta in mano.");
+      return;
+    }
     const mv = botMove.current;
     const secret = mv?.chamber ?? chamber ?? 1;
     const hit = card.kind === "num" && card.value === secret;
@@ -297,8 +307,8 @@ function Gioca() {
     finishGunAttack(false, hit, secret);
   };
 
-  const nextRound = () => {
-    if (over || shot) return;
+  const nextRound = (force = false) => {
+    if (over || (!force && shot)) return;
     setReveal(null);
     // il mazzo può finire: si continua finché qualcuno ha ancora carte in mano
     if (deck.length === 0 && (me.hand.length === 0 || bot.hand.length === 0)) {
@@ -415,7 +425,9 @@ function Gioca() {
                       if (phase === "choose") setSelected(c.id);
                       else if (phase === "defend") defendWith(c);
                     }}
-                    disabled={phase !== "choose" && phase !== "defend"}
+                    disabled={
+                      phase !== "choose" && !(phase === "defend" && c.kind === "num")
+                    }
                   />
                 </div>
               ))}
