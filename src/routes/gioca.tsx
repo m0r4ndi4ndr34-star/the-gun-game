@@ -425,7 +425,9 @@ function Gioca() {
                       if (phase === "choose") setSelected(c.id);
                       else if (phase === "defend") defendWith(c);
                     }}
-                    disabled={phase !== "choose" && phase !== "defend"}
+                    disabled={
+                      phase !== "choose" && !(phase === "defend" && c.kind === "num")
+                    }
                   />
                 </div>
               ))}
