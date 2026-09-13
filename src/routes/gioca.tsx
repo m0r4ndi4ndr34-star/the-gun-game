@@ -390,6 +390,12 @@ function Gioca() {
           onClick={() => setAskExit(true)}
           className="rounded-md border-2 border-foreground/25 px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition-all hover:scale-105 hover:border-primary hover:text-primary"
         >
+          ← Menù principale
+        </button>
+        <button
+          onClick={() => setAskExit(true)}
+          className="rounded-md border-2 border-foreground/25 px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition-all hover:scale-105 hover:border-primary hover:text-primary"
+        >
           Abbandona
         </button>
       </header>
@@ -401,7 +407,7 @@ function Gioca() {
             <MagazineBar shots={bot.shots} magazines={bot.magazines} label={bot.name} compact />
             <div className="flex flex-1 justify-center gap-2">
               {bot.hand.map((c) => (
-                <div key={c.id} className="w-16 transition-all duration-300 sm:w-20">
+                <div key={c.id} className="w-16 animate-[playFromTop_.7s_ease-out_both] transition-all duration-700 sm:w-20">
                   <CardView card={c} faceDown />
                 </div>
               ))}
@@ -411,24 +417,38 @@ function Gioca() {
           {/* Tavolo */}
           <div className="relative flex min-h-56 items-center justify-center gap-8 rounded-lg border border-foreground/10 bg-[radial-gradient(circle,rgba(220,38,38,0.12),transparent_70%)] p-4">
             <div className="text-center">
-              <div className="w-20">
+              <button
+                type="button"
+                onClick={drawMine}
+                disabled={!(phase === "draw" && drawQueue[0] === "me" && deck.length > 0)}
+                className={`w-20 rounded-lg transition-all duration-500 ${
+                  phase === "draw" && drawQueue[0] === "me" && deck.length > 0
+                    ? "animate-[drawPulse_1.6s_ease-in-out_infinite] cursor-pointer"
+                    : "cursor-default"
+                }`}
+              >
                 <img
                   src={cardBack}
                   alt="Mazzo di pesca"
                   className="aspect-[3/4] w-full rounded-lg border-2 border-foreground/20 object-cover"
                 />
-              </div>
+              </button>
               <p className="mt-1 text-xs text-muted-foreground">{deck.length} carte</p>
+              {phase === "draw" && (
+                <p className="mt-1 max-w-[9rem] text-[10px] font-bold uppercase tracking-wider text-primary">
+                  {drawQueue[0] === "me" ? "Tocca il mazzo per pescare" : `Pesca ${bot.name}…`}
+                </p>
+              )}
             </div>
 
             {reveal ? (
               <div className="flex items-start gap-8">
-                <div className="w-20 animate-[playFromBottom_.45s_ease-out_both] text-center">
+                <div className="w-20 animate-[playFromBottom_.9s_cubic-bezier(.22,.61,.36,1)_both] text-center">
                   {reveal.mine ? <CardView card={reveal.mine} /> : null}
                   <p className="mt-1 text-[10px] uppercase text-muted-foreground">Tu</p>
                   <BetTag bet={reveal.myBet} delta={reveal.myDelta} />
                 </div>
-                <div className="w-20 animate-[playFromTop_.45s_ease-out_both] text-center">
+                <div className="w-20 animate-[playFromTop_.9s_cubic-bezier(.22,.61,.36,1)_both] text-center">
                   {reveal.theirs ? <CardView card={reveal.theirs} /> : <CardView faceDown />}
                   <p className="mt-1 text-[10px] uppercase text-muted-foreground">{bot.name}</p>
                   <BetTag bet={reveal.theirBet} delta={reveal.theirDelta} />
