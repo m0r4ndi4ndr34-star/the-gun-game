@@ -138,6 +138,8 @@ function Gioca() {
     setShot(null);
     setOver(null);
     setMessages([]);
+    setDrawQueue([]);
+    queueRef.current = [];
     botMove.current = null;
     setPhase("choose");
   }, [oppName]);
