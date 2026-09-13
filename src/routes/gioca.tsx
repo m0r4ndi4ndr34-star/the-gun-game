@@ -44,7 +44,7 @@ export const Route = createFileRoute("/gioca")({
   component: Gioca,
 });
 
-type Phase = "choose" | "anim" | "gunPick" | "defend" | "reveal" | "over";
+type Phase = "choose" | "anim" | "gunPick" | "defend" | "reveal" | "draw" | "over";
 
 type Reveal = {
   mine?: Card | undefined;
@@ -116,6 +116,8 @@ function Gioca() {
   const [over, setOver] = useState<{ result: "win" | "lose" | "draw"; byGun: boolean } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [askExit, setAskExit] = useState(false);
+  const [drawQueue, setDrawQueue] = useState<("me" | "bot")[]>([]);
+  const queueRef = useRef<("me" | "bot")[]>([]);
   const botMove = useRef<{ card: Card; bet: Bet; chamber?: number } | null>(null);
   const firstDrawer = useRef<"me" | "bot">("me");
 
@@ -136,6 +138,8 @@ function Gioca() {
     setShot(null);
     setOver(null);
     setMessages([]);
+    setDrawQueue([]);
+    queueRef.current = [];
     botMove.current = null;
     setPhase("choose");
   }, [oppName]);
@@ -150,24 +154,59 @@ function Gioca() {
     addMatch({ opponent: oppName, result, byGun, magazines: mag, oppMagazines: oppMag });
   };
 
-  const refill = (
-    d: Card[],
-    myHand: Card[],
-    botHand: Card[],
-    winner: "me" | "bot" | null,
-  ): { deck: Card[]; myHand: Card[]; botHand: Card[] } => {
-    const deckCopy = [...d];
+  // la pesca non è automatica: prepara l'ordine di pesca (chi ha giocato la carta più alta pesca per primo)
+  const planDraws = (myHand: Card[], botHand: Card[], winner: "me" | "bot" | null) => {
     const first = winner ?? firstDrawer.current;
     if (winner) firstDrawer.current = winner;
     const order: ("me" | "bot")[] = first === "me" ? ["me", "bot"] : ["bot", "me"];
-    const hands = { me: [...myHand], bot: [...botHand] };
-    for (const who of order) {
-      while (hands[who].length < 3 && deckCopy.length > 0) {
-        hands[who].push(deckCopy.shift()!);
-      }
-    }
-    return { deck: deckCopy, myHand: hands.me, botHand: hands.bot };
+    const need = { me: Math.max(0, 3 - myHand.length), bot: Math.max(0, 3 - botHand.length) };
+    const q: ("me" | "bot")[] = [];
+    for (const who of order) for (let i = 0; i < need[who]; i++) q.push(who);
+    queueRef.current = q;
   };
+
+  const startDraw = () => {
+    setReveal(null);
+    const q = queueRef.current.slice(0, deck.length);
+    queueRef.current = [];
+    if (q.length === 0) {
+      nextRound(true);
+      return;
+    }
+    setDrawQueue(q);
+    setPhase("draw");
+  };
+
+  const drawMine = () => {
+    if (phase !== "draw" || drawQueue[0] !== "me" || deck.length === 0) return;
+    const c = deck[0]!;
+    setDeck(deck.slice(1));
+    setMe((p) => ({ ...p, hand: [...p.hand, c] }));
+    setDrawQueue((q) => q.slice(1));
+  };
+
+  useEffect(() => {
+    if (phase !== "draw") return;
+    if (drawQueue.length === 0) {
+      nextRound(true);
+      return;
+    }
+    if (deck.length === 0) {
+      setDrawQueue([]);
+      return;
+    }
+    if (drawQueue[0] === "bot") {
+      const c = deck[0]!;
+      const t = window.setTimeout(() => {
+        setDeck((d) => d.slice(1));
+        setBot((p) => ({ ...p, hand: [...p.hand, c] }));
+        setDrawQueue((q) => q.slice(1));
+      }, 1100);
+      return () => window.clearTimeout(t);
+    }
+    return;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, drawQueue, deck]);
 
   const resolveWithBot = (myCard: Extract<Card, { kind: "num" }>, bet: Bet) => {
     const mv = botMove.current!;
@@ -183,10 +222,10 @@ function Gioca() {
     } else {
       winner = res.winner === 0 ? "me" : "bot";
     }
-    const r = refill(newDeck, myHand, botHand, winner);
-    setMe({ ...res.a, hand: r.myHand });
-    setBot({ ...res.b, hand: r.botHand });
-    setDeck(r.deck);
+    planDraws(myHand, botHand, winner);
+    setMe({ ...res.a, hand: myHand });
+    setBot({ ...res.b, hand: botHand });
+    setDeck(newDeck);
     setReveal({
       mine: myCard,
       theirs: botCard,
@@ -223,13 +262,13 @@ function Gioca() {
         return;
       }
       resolveWithBot(myCard, bet);
-    }, 1000);
+    }, 1700);
   };
 
   // avanzamento automatico dopo la rivelazione
   useEffect(() => {
-    if (phase !== "reveal") return;
-    const t = window.setTimeout(() => nextRound(), 2800);
+    if (phase !== "reveal" || shot) return;
+    const t = window.setTimeout(() => startDraw(), 3800);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, reveal]);
@@ -246,7 +285,7 @@ function Gioca() {
       return;
     }
     // colpo a vuoto: la partita riprende normalmente
-    nextRound(true);
+    startDraw();
   };
 
   const pickChamber = (n: number) => {
@@ -256,10 +295,9 @@ function Gioca() {
     const hit = defense.kind === "num" && defense.value === n;
     const myHand = me.hand.filter((c) => c.id !== gunCardInHand.id);
     const botHand = bot.hand.filter((c) => c.id !== defense.id);
-    const r = refill(deck, myHand, botHand, "me");
-    setMe((p) => ({ ...p, hand: r.myHand }));
-    setBot((p) => ({ ...p, hand: r.botHand }));
-    setDeck(r.deck);
+    planDraws(myHand, botHand, "me");
+    setMe((p) => ({ ...p, hand: myHand }));
+    setBot((p) => ({ ...p, hand: botHand }));
     setReveal({
       mine: gunCardInHand,
       theirs: defense,
@@ -287,10 +325,9 @@ function Gioca() {
     const hit = card.kind === "num" && card.value === secret;
     const myHand = me.hand.filter((c) => c.id !== card.id);
     const botHand = bot.hand.filter((c) => c.id !== mv?.card.id);
-    const r = refill(deck, myHand, botHand, "bot");
-    setMe((p) => ({ ...p, hand: r.myHand }));
-    setBot((p) => ({ ...p, hand: r.botHand }));
-    setDeck(r.deck);
+    planDraws(myHand, botHand, "bot");
+    setMe((p) => ({ ...p, hand: myHand }));
+    setBot((p) => ({ ...p, hand: botHand }));
     setReveal({
       mine: card,
       theirs: mv?.card,
@@ -355,6 +392,12 @@ function Gioca() {
           onClick={() => setAskExit(true)}
           className="rounded-md border-2 border-foreground/25 px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition-all hover:scale-105 hover:border-primary hover:text-primary"
         >
+          ← Menù principale
+        </button>
+        <button
+          onClick={() => setAskExit(true)}
+          className="rounded-md border-2 border-foreground/25 px-4 py-1.5 text-xs font-bold uppercase tracking-widest transition-all hover:scale-105 hover:border-primary hover:text-primary"
+        >
           Abbandona
         </button>
       </header>
@@ -366,7 +409,7 @@ function Gioca() {
             <MagazineBar shots={bot.shots} magazines={bot.magazines} label={bot.name} compact />
             <div className="flex flex-1 justify-center gap-2">
               {bot.hand.map((c) => (
-                <div key={c.id} className="w-16 transition-all duration-300 sm:w-20">
+                <div key={c.id} className="w-16 animate-[playFromTop_.7s_ease-out_both] transition-all duration-700 sm:w-20">
                   <CardView card={c} faceDown />
                 </div>
               ))}
@@ -376,24 +419,38 @@ function Gioca() {
           {/* Tavolo */}
           <div className="relative flex min-h-56 items-center justify-center gap-8 rounded-lg border border-foreground/10 bg-[radial-gradient(circle,rgba(220,38,38,0.12),transparent_70%)] p-4">
             <div className="text-center">
-              <div className="w-20">
+              <button
+                type="button"
+                onClick={drawMine}
+                disabled={!(phase === "draw" && drawQueue[0] === "me" && deck.length > 0)}
+                className={`w-20 rounded-lg transition-all duration-500 ${
+                  phase === "draw" && drawQueue[0] === "me" && deck.length > 0
+                    ? "animate-[drawPulse_1.6s_ease-in-out_infinite] cursor-pointer"
+                    : "cursor-default"
+                }`}
+              >
                 <img
                   src={cardBack}
                   alt="Mazzo di pesca"
                   className="aspect-[3/4] w-full rounded-lg border-2 border-foreground/20 object-cover"
                 />
-              </div>
+              </button>
               <p className="mt-1 text-xs text-muted-foreground">{deck.length} carte</p>
+              {phase === "draw" && (
+                <p className="mt-1 max-w-[9rem] text-[10px] font-bold uppercase tracking-wider text-primary">
+                  {drawQueue[0] === "me" ? "Tocca il mazzo per pescare" : `Pesca ${bot.name}…`}
+                </p>
+              )}
             </div>
 
             {reveal ? (
               <div className="flex items-start gap-8">
-                <div className="w-20 animate-[playFromBottom_.45s_ease-out_both] text-center">
+                <div className="w-20 animate-[playFromBottom_.9s_cubic-bezier(.22,.61,.36,1)_both] text-center">
                   {reveal.mine ? <CardView card={reveal.mine} /> : null}
                   <p className="mt-1 text-[10px] uppercase text-muted-foreground">Tu</p>
                   <BetTag bet={reveal.myBet} delta={reveal.myDelta} />
                 </div>
-                <div className="w-20 animate-[playFromTop_.45s_ease-out_both] text-center">
+                <div className="w-20 animate-[playFromTop_.9s_cubic-bezier(.22,.61,.36,1)_both] text-center">
                   {reveal.theirs ? <CardView card={reveal.theirs} /> : <CardView faceDown />}
                   <p className="mt-1 text-[10px] uppercase text-muted-foreground">{bot.name}</p>
                   <BetTag bet={reveal.theirBet} delta={reveal.theirDelta} />

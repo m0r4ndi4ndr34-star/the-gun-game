@@ -37,7 +37,7 @@ function Index() {
       <main className="relative mx-auto flex min-h-screen max-w-5xl flex-col items-center gap-10 px-5 py-10 md:flex-row md:justify-between md:py-16">
         <nav className="w-full max-w-sm space-y-3 md:order-1">
           <h1 className="mb-5 text-xs font-black uppercase tracking-[0.35em] text-muted-foreground">
-            Menu principale
+            Menù principale
           </h1>
           {voci.map((v, i) => (
             <Link
