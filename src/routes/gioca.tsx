@@ -220,10 +220,10 @@ function Gioca() {
     } else {
       winner = res.winner === 0 ? "me" : "bot";
     }
-    const r = refill(newDeck, myHand, botHand, winner);
-    setMe({ ...res.a, hand: r.myHand });
-    setBot({ ...res.b, hand: r.botHand });
-    setDeck(r.deck);
+    planDraws(myHand, botHand, winner);
+    setMe({ ...res.a, hand: myHand });
+    setBot({ ...res.b, hand: botHand });
+    setDeck(newDeck);
     setReveal({
       mine: myCard,
       theirs: botCard,
@@ -260,13 +260,13 @@ function Gioca() {
         return;
       }
       resolveWithBot(myCard, bet);
-    }, 1000);
+    }, 1700);
   };
 
   // avanzamento automatico dopo la rivelazione
   useEffect(() => {
-    if (phase !== "reveal") return;
-    const t = window.setTimeout(() => nextRound(), 2800);
+    if (phase !== "reveal" || shot) return;
+    const t = window.setTimeout(() => startDraw(), 3800);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, reveal]);
@@ -283,7 +283,7 @@ function Gioca() {
       return;
     }
     // colpo a vuoto: la partita riprende normalmente
-    nextRound(true);
+    startDraw();
   };
 
   const pickChamber = (n: number) => {
@@ -293,10 +293,9 @@ function Gioca() {
     const hit = defense.kind === "num" && defense.value === n;
     const myHand = me.hand.filter((c) => c.id !== gunCardInHand.id);
     const botHand = bot.hand.filter((c) => c.id !== defense.id);
-    const r = refill(deck, myHand, botHand, "me");
-    setMe((p) => ({ ...p, hand: r.myHand }));
-    setBot((p) => ({ ...p, hand: r.botHand }));
-    setDeck(r.deck);
+    planDraws(myHand, botHand, "me");
+    setMe((p) => ({ ...p, hand: myHand }));
+    setBot((p) => ({ ...p, hand: botHand }));
     setReveal({
       mine: gunCardInHand,
       theirs: defense,
@@ -324,10 +323,9 @@ function Gioca() {
     const hit = card.kind === "num" && card.value === secret;
     const myHand = me.hand.filter((c) => c.id !== card.id);
     const botHand = bot.hand.filter((c) => c.id !== mv?.card.id);
-    const r = refill(deck, myHand, botHand, "bot");
-    setMe((p) => ({ ...p, hand: r.myHand }));
-    setBot((p) => ({ ...p, hand: r.botHand }));
-    setDeck(r.deck);
+    planDraws(myHand, botHand, "bot");
+    setMe((p) => ({ ...p, hand: myHand }));
+    setBot((p) => ({ ...p, hand: botHand }));
     setReveal({
       mine: card,
       theirs: mv?.card,
