@@ -44,7 +44,7 @@ export const Route = createFileRoute("/gioca")({
   component: Gioca,
 });
 
-type Phase = "choose" | "anim" | "gunPick" | "defend" | "reveal" | "over";
+type Phase = "choose" | "anim" | "gunPick" | "defend" | "reveal" | "draw" | "over";
 
 type Reveal = {
   mine?: Card | undefined;
@@ -116,6 +116,8 @@ function Gioca() {
   const [over, setOver] = useState<{ result: "win" | "lose" | "draw"; byGun: boolean } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [askExit, setAskExit] = useState(false);
+  const [drawQueue, setDrawQueue] = useState<("me" | "bot")[]>([]);
+  const queueRef = useRef<("me" | "bot")[]>([]);
   const botMove = useRef<{ card: Card; bet: Bet; chamber?: number } | null>(null);
   const firstDrawer = useRef<"me" | "bot">("me");
 
@@ -150,24 +152,59 @@ function Gioca() {
     addMatch({ opponent: oppName, result, byGun, magazines: mag, oppMagazines: oppMag });
   };
 
-  const refill = (
-    d: Card[],
-    myHand: Card[],
-    botHand: Card[],
-    winner: "me" | "bot" | null,
-  ): { deck: Card[]; myHand: Card[]; botHand: Card[] } => {
-    const deckCopy = [...d];
+  // la pesca non è automatica: prepara l'ordine di pesca (chi ha giocato la carta più alta pesca per primo)
+  const planDraws = (myHand: Card[], botHand: Card[], winner: "me" | "bot" | null) => {
     const first = winner ?? firstDrawer.current;
     if (winner) firstDrawer.current = winner;
     const order: ("me" | "bot")[] = first === "me" ? ["me", "bot"] : ["bot", "me"];
-    const hands = { me: [...myHand], bot: [...botHand] };
-    for (const who of order) {
-      while (hands[who].length < 3 && deckCopy.length > 0) {
-        hands[who].push(deckCopy.shift()!);
-      }
-    }
-    return { deck: deckCopy, myHand: hands.me, botHand: hands.bot };
+    const need = { me: Math.max(0, 3 - myHand.length), bot: Math.max(0, 3 - botHand.length) };
+    const q: ("me" | "bot")[] = [];
+    for (const who of order) for (let i = 0; i < need[who]; i++) q.push(who);
+    queueRef.current = q;
   };
+
+  const startDraw = () => {
+    setReveal(null);
+    const q = queueRef.current.slice(0, deck.length);
+    queueRef.current = [];
+    if (q.length === 0) {
+      nextRound(true);
+      return;
+    }
+    setDrawQueue(q);
+    setPhase("draw");
+  };
+
+  const drawMine = () => {
+    if (phase !== "draw" || drawQueue[0] !== "me" || deck.length === 0) return;
+    const c = deck[0]!;
+    setDeck(deck.slice(1));
+    setMe((p) => ({ ...p, hand: [...p.hand, c] }));
+    setDrawQueue((q) => q.slice(1));
+  };
+
+  useEffect(() => {
+    if (phase !== "draw") return;
+    if (drawQueue.length === 0) {
+      nextRound(true);
+      return;
+    }
+    if (deck.length === 0) {
+      setDrawQueue([]);
+      return;
+    }
+    if (drawQueue[0] === "bot") {
+      const c = deck[0]!;
+      const t = window.setTimeout(() => {
+        setDeck((d) => d.slice(1));
+        setBot((p) => ({ ...p, hand: [...p.hand, c] }));
+        setDrawQueue((q) => q.slice(1));
+      }, 1100);
+      return () => window.clearTimeout(t);
+    }
+    return;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, drawQueue, deck]);
 
   const resolveWithBot = (myCard: Extract<Card, { kind: "num" }>, bet: Bet) => {
     const mv = botMove.current!;
