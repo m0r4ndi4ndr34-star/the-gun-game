@@ -18,7 +18,7 @@ export function CardView({
   disabled?: boolean | undefined;
 }) {
   const base =
-    "relative aspect-[3/4] w-full overflow-hidden rounded-lg border-2 border-foreground/20 bg-black shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-300 ease-out will-change-transform";
+    "relative aspect-[3/4] w-full overflow-hidden rounded-lg border-2 border-foreground/20 bg-black shadow-[0_8px_24px_rgba(0,0,0,0.6)] transition-all duration-[700ms] ease-[cubic-bezier(.22,.61,.36,1)] will-change-transform focus:outline-none";
 
   const content = () => {
     if (faceDown || !card) {
